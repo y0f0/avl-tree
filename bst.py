@@ -3,6 +3,7 @@ class Node:
         self.data = data
         self.left = left
         self.right = right
+        self.height = 1
 
 
 class BST:
@@ -57,19 +58,34 @@ class BST:
                 node = node.right
         return False
 
-    def insert_node(self, node, value):
-        """
-        Inserts a new node  into the tree at the correct location.
-        """
-        if node is None:
-            return Node(value)
+    def insert_node(self, root, key):
 
-        if value < node.data:
-            node.left = self.insert_node(node.left, value)
+        if not root:
+            return Node(key)
+        elif key < root.data:
+            root.left = self.insert_node(root.left, key)
         else:
-            node.right = self.insert_node(node.right, value)
+            root.right = self.insert_node(root.right, key)
 
-        return node
+        root.height = 1 + max(self.getHeight(root.left), self.getHeight(root.right))
+
+        balance = self.getBalance(root)
+
+        if balance > 1 and key < root.left.data:
+            return self.rightRotate(root)
+
+        if balance < -1 and key > root.right.data:
+            return self.leftRotate(root)
+
+        if balance > 1 and key > root.left.data:
+            root.left = self.leftRotate(root.left)
+            return self.rightRotate(root)
+
+        if balance < -1 and key < root.right.data:
+            root.right = self.rightRotate(root.right)
+            return self.leftRotate(root)
+
+        return root
 
     def insert(self, value):
         """
@@ -77,44 +93,109 @@ class BST:
         """
         self.root = self.insert_node(self.root, value)
 
-    @staticmethod
-    def minimum(node):
-        """
-        Finds the smallest node by data.
-        """
-        while node.left is not None:
-            node = node.left
-        return node
+    def delete_node(self, root, key):
 
-    def delete_node(self, node, value):
-        """
-        Deletes the node from tree.
-        """
-        if node is None:
-            return node
+        if not root:
+            return root
 
-        if value < node.data:
-            node.left = self.delete_node(node.left, value)
-        elif value > node.data:
-            node.right = self.delete_node(node.right, value)
-        elif node.left is not None and node.right is not None:
-            node.data = self.minimum(node.right).data
-            node.right = self.delete_node(node.right, node.data)
+        elif key < root.data:
+            root.left = self.delete_node(root.left, key)
+
+        elif key > root.data:
+            root.right = self.delete_node(root.right, key)
+
         else:
-            if node.left is not None:
-                node = node.left
-            elif node.right is not None:
-                node = node.right
-            else:
-                node = None
+            if root.left is None:
+                temp = root.right
+                root = None
+                return temp
 
-        return node
+            elif root.right is None:
+                temp = root.left
+                root = None
+                return temp
+
+            temp = self.getMinValueNode(root.right)
+            root.data = temp.data
+            root.right = self.delete_node(root.right, temp.data)
+
+        if root is None:
+            return root
+
+        root.height = 1 + max(self.getHeight(root.left),
+                            self.getHeight(root.right))
+
+        balance = self.getBalance(root)
+
+        if balance > 1 and self.getBalance(root.left) >= 0:
+            return self.rightRotate(root)
+
+        if balance < -1 and self.getBalance(root.right) <= 0:
+            return self.leftRotate(root)
+
+        if balance > 1 and self.getBalance(root.left) < 0:
+            root.left = self.leftRotate(root.left)
+            return self.rightRotate(root)
+
+        if balance < -1 and self.getBalance(root.right) > 0:
+            root.right = self.rightRotate(root.right)
+            return self.leftRotate(root)
+
+        return root
 
     def delete(self, value):
         """
         Deletes the node with value from tree.
         """
         self.root = self.delete_node(self.root, value)
+
+    def leftRotate(self, z):
+
+        y = z.right
+        T2 = y.left
+
+        y.left = z
+        z.right = T2
+
+        z.height = 1 + max(self.getHeight(z.left),
+                         self.getHeight(z.right))
+        y.height = 1 + max(self.getHeight(y.left),
+                         self.getHeight(y.right))
+
+        return y
+
+    def rightRotate(self, z):
+
+        y = z.left
+        T3 = y.right
+
+        y.right = z
+        z.left = T3
+
+        z.height = 1 + max(self.getHeight(z.left),
+                          self.getHeight(z.right))
+        y.height = 1 + max(self.getHeight(y.left),
+                          self.getHeight(y.right))
+
+        return y
+
+    def getHeight(self, root):
+        if not root:
+            return 0
+
+        return root.height
+
+    def getBalance(self, root):
+        if not root:
+            return 0
+
+        return self.getHeight(root.left) - self.getHeight(root.right)
+
+    def getMinValueNode(self, root):
+        if root is None or root.left is None:
+            return root
+
+        return self.getMinValueNode(root.left)
 
     def inorder(self, node):
         """
